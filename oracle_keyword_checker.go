@@ -116,6 +116,7 @@ var ORACLEKeyword = map[string]string{
 	"WITH":            "WITH",
 }
 
+// Check oralce 保留字
 func Check(fieldOrTableName string) bool {
 	_, ok := ORACLEKeyword[fieldOrTableName]
 	if ok {
@@ -134,7 +135,7 @@ func CheckEscape(fieldOrTableName string) bool {
 
 func CheckAndReplace(fieldOrTableName string) string {
 	if Check(fieldOrTableName) {
-		return "`" + fieldOrTableName + "`"
+		return "\"" + fieldOrTableName + "\""
 	} else {
 		return fieldOrTableName
 	}

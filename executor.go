@@ -10,8 +10,6 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
-
-	sql2 "github.com/transaction-wg/seata-golang/pkg/util/sql"
 )
 
 type insertExecutor struct {
@@ -61,38 +59,46 @@ func (executor *insertExecutor) GetInsertColumns() []string {
 func (executor *deleteExecutor) GetTableName() string {
 	var sb strings.Builder
 	executor.stmt.TableRefs.TableRefs.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s := sb.String()
+	s = escape2(s, "`")
+	return s
 }
 
 func (executor *deleteExecutor) GetWhereCondition() string {
 	var sb strings.Builder
 	executor.stmt.Where.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s, _ := mysql2OracleWhere(sb.String())
+	return s
 }
-
 func (executor *selectForUpdateExecutor) GetTableName() string {
 	var sb strings.Builder
 	table := executor.stmt.From.TableRefs.Left.(*ast.TableSource)
 	table.Source.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s := sb.String()
+	s = escape2(s, "`")
+	return s
 }
 
 func (executor *selectForUpdateExecutor) GetWhereCondition() string {
 	var sb strings.Builder
 	executor.stmt.Where.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s, _ := mysql2OracleWhere(sb.String())
+	return s
 }
 
 func (executor *updateExecutor) GetTableName() string {
 	var sb strings.Builder
 	executor.stmt.TableRefs.TableRefs.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s := sb.String()
+	s = escape2(s, "`")
+	return s
 }
 
 func (executor *updateExecutor) GetWhereCondition() string {
 	var sb strings.Builder
 	executor.stmt.Where.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
-	return sb.String()
+	s, _ := mysql2OracleWhere(sb.String())
+	return s
 }
 
 func (executor *updateExecutor) GetUpdateColumns() []string {
@@ -311,7 +317,8 @@ func (executor *deleteExecutor) buildBeforeImageSql(tableMeta schema.TableMeta) 
 	fmt.Fprintf(&b, " FROM %s WHERE ", executor.GetTableName())
 	fmt.Fprint(&b, executor.GetWhereCondition())
 	fmt.Fprint(&b, " FOR UPDATE")
-	return b.String()
+	s := b.String()
+	return s
 }
 
 func (executor *deleteExecutor) getTableMeta() (schema.TableMeta, error) {
@@ -435,14 +442,15 @@ func (executor *updateExecutor) buildAfterImageSql(tableMeta schema.TableMeta, b
 		}
 	}
 	fmt.Fprintf(&b, " FROM %s ", executor.GetTableName())
-	fmt.Fprintf(&b, "WHERE `%s` IN", tableMeta.GetPKName())
-	fmt.Fprint(&b, sql2.AppendInParam(len(beforeImage.PKFields())))
+	fmt.Fprintf(&b, "WHERE %s IN", tableMeta.GetPKName())
+	fmt.Fprint(&b, AppendInParam(len(beforeImage.PKFields())))
 	return b.String()
 }
 
 func (executor *updateExecutor) buildTableRecords(tableMeta schema.TableMeta) (*schema.TableRecords, error) {
 	sql := executor.buildBeforeImageSql(tableMeta)
-	argsCount := strings.Count(sql, "?")
+	// 有些暴力
+	argsCount := strings.Count(sql, ":")
 	rows, err := executor.mc.prepareQuery(sql, executor.args[len(executor.args)-argsCount:])
 	if err != nil {
 		return nil, err

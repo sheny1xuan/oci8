@@ -379,6 +379,7 @@ func (stmt *Stmt) Query(args []driver.Value) (driver.Rows, error) {
 		}
 		act, _ := parser.ParseOneStmt(mysqlStmt, "", "")
 		selectForUpdateStmt, ok := act.(*ast.SelectStmt)
+		// 如果有行级锁，执行分布式事务
 		if ok && selectForUpdateStmt.LockTp == ast.SelectLockForUpdate {
 			executor := &selectForUpdateExecutor{
 				mc:          stmt.conn,
@@ -401,15 +402,15 @@ func (stmt *Stmt) Query(args []driver.Value) (driver.Rows, error) {
 }
 
 // QueryContext runs a query with context
-func (stmt *Stmt) QueryContext(ctx context.Context, namedValues []driver.NamedValue) (driver.Rows, error) {
-	stmt.ctx = ctx
-	binds, err := stmt.bindValues(nil, namedValues)
-	if err != nil {
-		return nil, err
-	}
+// func (stmt *Stmt) QueryContext(ctx context.Context, namedValues []driver.NamedValue) (driver.Rows, error) {
+// 	stmt.ctx = ctx
+// 	binds, err := stmt.bindValues(nil, namedValues)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return stmt.query(binds)
-}
+// 	return stmt.query(binds)
+// }
 
 func (stmt *Stmt) localQuery(values []driver.Value) (driver.Rows, error) {
 	stmt.ctx = context.Background()
