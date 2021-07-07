@@ -156,13 +156,46 @@ func (executor *insertExecutor) AfterImage(result sql.Result) (*schema.TableReco
 	if executor.getPKIndex() >= 0 {
 		afterImage, err = executor.BuildTableRecords(pkValues)
 	} else {
-		pk, _ := result.LastInsertId()
-		afterImage, err = executor.BuildTableRecords([]driver.Value{pk})
+		res := result.(*Result)
+		// pk, _ := result.LastInsertId()
+		pk := res.rowid
+		afterImage, err = executor.BuildTableRecordsByRowid([]driver.Value{pk})
 	}
 	if err != nil {
 		return nil, err
 	}
 	return afterImage, nil
+}
+
+func (executor *insertExecutor) BuildTableRecordsByRowid(pkValues []driver.Value) (*schema.TableRecords, error) {
+	tableMeta, err := executor.getTableMeta()
+	if err != nil {
+		return nil, err
+	}
+	var sb strings.Builder
+	fmt.Fprint(&sb, "SELECT ")
+	var i = 0
+	columnCount := len(tableMeta.Columns)
+	for _, column := range tableMeta.Columns {
+		fmt.Fprint(&sb, CheckAndReplace(column))
+		i = i + 1
+		if i < columnCount {
+			fmt.Fprint(&sb, ",")
+		} else {
+			fmt.Fprint(&sb, " ")
+		}
+	}
+	dbName := escape2(executor.GetTableName(), "`")
+	fmt.Fprintf(&sb, "FROM %s ", dbName)
+	fmt.Fprintf(&sb, " WHERE \"ROWID\" IN ")
+	fmt.Fprint(&sb, appendInParam(len(pkValues)))
+	s := sb.String()
+
+	rows, err := executor.mc.prepareQuery(s, pkValues)
+	if err != nil {
+		return nil, err
+	}
+	return buildRecords(tableMeta, rows), nil
 }
 
 func (executor *insertExecutor) BuildTableRecords(pkValues []driver.Value) (*schema.TableRecords, error) {

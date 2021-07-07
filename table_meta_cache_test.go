@@ -17,7 +17,7 @@ func TestFetchInfo(t *testing.T) {
 
 	// s := "SELECT OWNER, TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHAR_LENGTH, DATA_PRECISION, " +
 	// 	"DATA_SCALE, NULLABLE, DATA_DEFAULT, DATA_LENGTH, COLUMN_ID FROM ALL_TAB_COLUMNS WHERE TABLE_NAME = "
-	tablename := "cc"
+	tablename := "AAASWPAAHAAAAIEAAC"
 	// s := "SELECT OWNER, TABLE_NAME FROM ALL_TAB_COLUMNS WHERE TABLE_NAME = :1 "
 	// s := "SELECT CON.INDEX_NAME, COL.COLUMN_NAME, IDX.UNIQUENESS " +
 	// 	"FROM USER_CONSTRAINTS CON,  USER_CONS_COLUMNS COL, ALL_INDEXES IDX " +
@@ -26,7 +26,7 @@ func TestFetchInfo(t *testing.T) {
 	// 	"AND CON.CONSTRAINT_TYPE='P' AND COL.TABLE_NAME = "
 	// s = fmt.Sprintf(s, tablename)
 	// s := "SELECT OWNER, TABLE_NAME FROM ALL_TAB_COLUMNS WHERE TABLE_NAME = "
-	s := "SELECT COL1,COL2 FROM test  WHERE COL1 IN (:1)"
+	s := "SELECT COL1,COL2 FROM test  WHERE \"ROWID\" IN (:1)"
 
 	rows, err := db.Query(s, tablename)
 
@@ -40,7 +40,7 @@ func TestFetchInfo(t *testing.T) {
 
 	for rows.Next() {
 		var f1 string
-		var f2 string
+		var f2 int64
 		// var f3 string
 		rows.Scan(&f1, &f2)
 		// rows.Scan(&f1)

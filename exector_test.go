@@ -9,12 +9,17 @@ import (
 	"testing"
 )
 
-var test_DSN string = "C##STUDENT/123456@127.0.0.1:1521/ORCL"
+var (
+	testDSN        string = "C##STUDENT/123456@127.0.0.1:1521/ORCL"
+	testXID        string = "192.2:1231:120301"
+	testBranchID   int64  = 12
+	testResourceID string = "1223"
+)
 
 func get_conn(dbname string) *Conn {
 
 	db := DriverStruct{Logger: log.New(ioutil.Discard, "", 0)}
-	conn, err := db.Open(test_DSN)
+	conn, err := db.Open(testDSN)
 	if err != nil {
 		panic("connect erroe")
 	}
@@ -25,7 +30,7 @@ func get_conn(dbname string) *Conn {
 }
 
 func TestConn(t *testing.T) {
-	oc := get_conn(test_DSN)
+	oc := get_conn(testDSN)
 	defer oc.Close()
 }
 
@@ -40,7 +45,7 @@ func TestExctor(t *testing.T) {
 	ctx := context.WithValue(
 		context.Background(),
 		XID,
-		"192.2:1231:120301")
+		testXID)
 
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelDefault,
@@ -56,7 +61,7 @@ func TestExctor(t *testing.T) {
 	col4Val := []byte{1, 2, 3}
 
 	// Insert
-	// tx.Exec("insert into test ( col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
+	tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
 
 	// Delete
 	// tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
@@ -68,19 +73,18 @@ func TestExctor(t *testing.T) {
 	// rows, err := tx.Query("SELECT COL1, COL2, COL3, COL4 FROM TEST WHERE COL1 = :1 AND COL2 = :2", "X", 88)
 
 	// Update Qury
-	rows, err := tx.Query("SELECT COL1, COL2, COL3, COL4 FROM TEST WHERE COL1 = :1 AND COL2 = :2 FOR UPDATE", "X", 88)
+	// rows, err := tx.Query("SELECT COL1, COL2, COL3, COL4 FROM TEST WHERE COL1 = :1 AND COL2 = :2 FOR UPDATE", "X", 88)
+	// for rows.Next() {
+	// 	rows.Scan(&col1Val, &col2Val, &col3Val, &col4Val)
 
-	for rows.Next() {
-		rows.Scan(&col1Val, &col2Val, &col3Val, &col4Val)
-
-		fmt.Println(col1Val)
-		fmt.Println(col2Val)
-		fmt.Println(col3Val)
-		for _, b := range col4Val {
-			fmt.Printf("%x", b)
-		}
-		fmt.Printf("/n")
-	}
+	// 	fmt.Println(col1Val)
+	// 	fmt.Println(col2Val)
+	// 	fmt.Println(col3Val)
+	// 	for _, b := range col4Val {
+	// 		fmt.Printf("%x", b)
+	// 	}
+	// 	fmt.Printf("/n")
+	// }
 
 	tx.Commit()
 
