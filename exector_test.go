@@ -12,8 +12,8 @@ import (
 var (
 	testDSN        string = "C##STUDENT/123456@127.0.0.1:1521/ORCL"
 	testXID        string = "192.2:1231:120301"
-	testBranchID   int64  = 12
-	testResourceID string = "1223"
+	testBranchID   int64  = 1231
+	testResourceID string = "41"
 )
 
 func get_conn(dbname string) *Conn {
@@ -57,14 +57,14 @@ func TestExctor(t *testing.T) {
 	}
 	col1Val := "a"
 	col2Val := 123
-	col3Val := 12.33
-	col4Val := []byte{1, 2, 3}
+	// col3Val := 12.33
+	// col4Val := []byte{1, 2, 3}
 
 	// Insert
-	tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
+	// tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
 
 	// Delete
-	// tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
+	tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
 
 	// Update
 	// tx.Exec("UPDATE TEST SET COL1 = :1, COL2 = :2, COL3 = :3 WHERE COL1 = :4", "X", 88, 88.88, col1Val)

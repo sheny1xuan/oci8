@@ -114,11 +114,14 @@ func convertField(field *schema.Field) *PbField {
 		w.WriteFloat64(v)
 		break
 	case []uint8:
-		w.WriteByte(byte(fieldTypeString))
-		w.Write(v)
+		w.WriteByte(byte(fieldTypeBLOB))
+		w.WriteBytes(v)
 		break
 	case string:
 		w.WriteByte(byte(fieldTypeString))
+		// Undo -> 优化
+		var len int = len(v)
+		w.WriteInt64(int64(len))
 		w.WriteString(v)
 		break
 	case time.Time:
@@ -165,8 +168,11 @@ func convertPbField(pbField *PbField) *schema.Field {
 	case fieldTypeString:
 		// field.Value = pbField.Value[1:]
 		// untest
-		value, _, _ := r.ReadStringX()
+		len, _, _ := r.ReadInt64()
+		value, _, _ := r.ReadString(int(len))
 		field.Value = value
+	case fieldTypeBLOB:
+		field.Value = pbField.Value[1:]
 	case fieldTypeTime:
 		// undo
 		// loc, _ := time.LoadLocation("Local")

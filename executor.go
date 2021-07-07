@@ -278,7 +278,10 @@ func (executor *insertExecutor) getColumnLen() int {
 
 // Get infos about columns and index
 func (executor *insertExecutor) getTableMeta() (schema.TableMeta, error) {
-	tableMetaCache := GetTableMetaCache(executor.mc.cfg.Username)
+	tableMetaCache, err := GetTableMetaCache(executor.mc.cfg.Username)
+	if err != nil {
+		return schema.TableMeta{}, err
+	}
 	return tableMetaCache.GetTableMeta(executor.mc, executor.GetTableName())
 }
 
@@ -355,7 +358,10 @@ func (executor *deleteExecutor) buildBeforeImageSql(tableMeta schema.TableMeta) 
 }
 
 func (executor *deleteExecutor) getTableMeta() (schema.TableMeta, error) {
-	tableMetaCache := GetTableMetaCache(executor.mc.cfg.Username)
+	tableMetaCache, err := GetTableMetaCache(executor.mc.cfg.Username)
+	if err != nil {
+		return schema.TableMeta{}, err
+	}
 	return tableMetaCache.GetTableMeta(executor.mc, executor.GetTableName())
 }
 
@@ -395,7 +401,10 @@ func (executor *selectForUpdateExecutor) Execute(lockRetryInterval time.Duration
 }
 
 func (executor *selectForUpdateExecutor) getTableMeta() (schema.TableMeta, error) {
-	tableMetaCache := GetTableMetaCache(executor.mc.cfg.Username)
+	tableMetaCache, err := GetTableMetaCache(executor.mc.cfg.Username)
+	if err != nil {
+		return schema.TableMeta{}, err
+	}
 	return tableMetaCache.GetTableMeta(executor.mc, executor.GetTableName())
 }
 
@@ -512,7 +521,10 @@ func (executor *updateExecutor) buildBeforeImageSql(tableMeta schema.TableMeta) 
 }
 
 func (executor *updateExecutor) getTableMeta() (schema.TableMeta, error) {
-	tableMetaCache := GetTableMetaCache(executor.mc.cfg.Username)
+	tableMetaCache, err := GetTableMetaCache(executor.mc.cfg.Username)
+	if err != nil {
+		return schema.TableMeta{}, err
+	}
 	return tableMetaCache.GetTableMeta(executor.mc, executor.GetTableName())
 }
 

@@ -30,8 +30,13 @@ func InitTableMetaCache(dbName string) {
 	tableMetaCaches[dbName] = tableMetaCache
 }
 
-func GetTableMetaCache(dbName string) *TableMetaCache {
-	return tableMetaCaches[dbName]
+func GetTableMetaCache(dbName string) (*TableMetaCache, error) {
+	tableMetaName, ok := tableMetaCaches[dbName]
+	if ok {
+		return tableMetaName, nil
+	} else {
+		return tableMetaName, errors.Errorf("%s not in tableMetaCache", dbName)
+	}
 }
 
 func (cache *TableMetaCache) GetTableMeta(conn *Conn, tableName string) (schema.TableMeta, error) {

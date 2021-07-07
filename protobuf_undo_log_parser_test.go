@@ -33,19 +33,19 @@ func getBranchUndoLog() *branchUndoLog {
 								{
 									Name:    "name",
 									KeyType: schema.NULL,
-									Type:    VARCHAR,
-									Value:   []byte("scott"),
+									Type:    0,
+									Value:   "scott",
 								},
 								{
 									Name:    "age",
 									KeyType: schema.NULL,
-									Type:    INTEGER,
+									Type:    0,
 									Value:   int64(28),
 								},
 								{
 									Name:    "avatar",
 									KeyType: schema.NULL,
-									Type:    BLOB,
+									Type:    0,
 									Value: []byte{1, 40, 1, 32, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 112, 0, 112,
 										0, 0, 1, 31, 0, 116, 69, 120, 105, 102, 0, 0, 77, 77, 0, 42, 0, 0, 0, 8, 0, 4,
 										1, 26, 0, 5, 0, 0, 0, 1, 0, 0, 0, 62, 1, 27, 0, 5, 0, 0, 0, 1, 0, 0, 0, 70, 1, 40,

@@ -15,8 +15,8 @@ const (
 	DeleteUndoLogByCreateSql = "DELETE FROM undo_log WHERE log_created <= :1 LIMIT :2"
 	InsertUndoLogSql         = "INSERT INTO UNDO_LOG (id, branch_id, xid, context, rollback_info, log_status, log_created, log_modified)" +
 		"VALUES (UNDO_LOG_SEQ.NEXTVAL, :1, :2, :3, :4, :5, sysdate, sysdate)"
-	SelectUndoLogSql = "SELECT branch_id, xid, context, rollback_info, log_status FROM undo_log" +
-		"WHERE xid = :1 AND branch_id = :2 FOR UPDATE"
+	SelectUndoLogSql = "SELECT branch_id, xid, context, rollback_info, log_status FROM undo_log " +
+		"WHERE xid = :1 AND branch_id = :2"
 )
 
 type State byte
@@ -85,10 +85,9 @@ func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, 
 
 	undoLogs := make([]*branchUndoLog, 0)
 
-	var branchID2 sql.NullInt64
-	var xid2, context sql.NullString
-	var rollbackInfo sql.RawBytes
-	var state sql.NullInt32
+	var context string
+	var rollbackInfo []byte
+	var state int64
 
 	vals := make([]driver.Value, 5)
 	dest := []interface{}{&branchID, &xid, &context, &rollbackInfo, &state}
@@ -108,10 +107,8 @@ func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, 
 
 		exists = true
 
-		if State(state.Int32) != Normal {
-			xid2val, _ := xid2.Value()
-			branchID2val, _ := branchID2.Value()
-			fmt.Printf("xid %s branch %s, ignore %s undo_log", xid2val, branchID2val, State(state.Int32).String())
+		if State(state) != Normal {
+			fmt.Printf("xid %s branch %d, ignore %s undo_log", xid, branchID, State(state).String())
 			return nil
 		}
 
@@ -125,19 +122,25 @@ func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, 
 	for _, branchUndoLog := range undoLogs {
 		sqlUndoLogs := branchUndoLog.SqlUndoLogs
 		for _, sqlUndoLog := range sqlUndoLogs {
-			tableMeta, err := GetTableMetaCache(conn.cfg.Username).GetTableMeta(conn, sqlUndoLog.TableName)
+			tableMetaCache, err := GetTableMetaCache(conn.cfg.Username)
+
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			tableMeta, err := tableMetaCache.GetTableMeta(conn, sqlUndoLog.TableName)
 			if err != nil {
 				tx.Rollback()
 				return errors.WithStack(err)
 			}
 
 			sqlUndoLog.SetTableMeta(tableMeta)
-			// undo -> for 7.5
-			// err1 := NewMysqlUndoExecutor(*sqlUndoLog).Execute(conn)
-			// if err1 != nil {
-			// 	tx.Rollback()
-			// 	return errors.WithStack(err1)
-			// }
+
+			err1 := NewOracleUndoExecutor(*sqlUndoLog).Execute(conn)
+			if err1 != nil {
+				tx.Rollback()
+				return errors.WithStack(err1)
+			}
 		}
 	}
 
