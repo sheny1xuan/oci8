@@ -1,12 +1,150 @@
 package oci8
 
 import (
+	"context"
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"log"
 	"testing"
 )
 
+var (
+	col1Val string  = "a"
+	col2Val int64   = 123
+	col3Val float64 = 12.33
+	col4Val         = []byte{1, 2, 3}
+)
+
 func TestUndo(t *testing.T) {
+	execUndo(t)
+}
+
+func TestInsertUndoManager(t *testing.T) {
+
+	getInsertUndolog(t)
+
+	execUndo(t)
+}
+
+func TestUpdateUndoManager(t *testing.T) {
+
+	getUpdateUndolog(t)
+
+	execUndo(t)
+}
+
+func TestDeleteUndoManager(t *testing.T) {
+
+	getInsertUndolog(t)
+
+	execUndo(t)
+}
+
+func getInsertUndolog(t *testing.T) {
+	db, err := sql.Open("oci8", "C##STUDENT/123456@127.0.0.1:1521/ORCL")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	InitTableMetaCache("C##STUDENT")
+
+	ctx := context.WithValue(
+		context.Background(),
+		XID,
+		testXID)
+
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  false,
+	})
+
+	if err != nil {
+		t.Errorf("begin Tx error")
+	}
+
+	// Insert
+	tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
+
+	tx.Commit()
+}
+
+func getDeleteUndolog(t *testing.T) {
+	db, err := sql.Open("oci8", "C##STUDENT/123456@127.0.0.1:1521/ORCL")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	InitTableMetaCache("C##STUDENT")
+
+	ctx := context.WithValue(
+		context.Background(),
+		XID,
+		testXID)
+
+	err = insertDataN(3, db)
+
+	if err != nil {
+		t.Errorf("Insert error")
+	}
+
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  false,
+	})
+
+	if err != nil {
+		t.Errorf("begin Tx error")
+	}
+
+	// Delete
+	tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
+
+	tx.Commit()
+}
+
+func getUpdateUndolog(t *testing.T) {
+	db, err := sql.Open("oci8", "C##STUDENT/123456@127.0.0.1:1521/ORCL")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	InitTableMetaCache("C##STUDENT")
+
+	ctx := context.WithValue(
+		context.Background(),
+		XID,
+		testXID)
+
+	err = insertDataN(3, db)
+
+	if err != nil {
+		t.Errorf("Insert error")
+	}
+
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelDefault,
+		ReadOnly:  false,
+	})
+
+	if err != nil {
+		t.Errorf("begin Tx error")
+	}
+
+	// Update
+	tx.Exec("UPDATE TEST SET COL1 = :1, COL2 = :2, COL3 = :3 WHERE COL1 = :4", "X", 88, 88.88, col1Val)
+
+	tx.Commit()
+}
+
+// execute undolog
+func execUndo(t *testing.T) {
 	oc := get_conn(testDSN)
 
 	InitTableMetaCache(oc.cfg.Username)

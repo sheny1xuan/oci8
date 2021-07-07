@@ -56,7 +56,7 @@ func TestExctor(t *testing.T) {
 		t.Errorf("begin Tx error")
 	}
 	col1Val := "a"
-	col2Val := 123
+	// col2Val := 123
 	// col3Val := 12.33
 	// col4Val := []byte{1, 2, 3}
 
@@ -64,10 +64,10 @@ func TestExctor(t *testing.T) {
 	// tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
 
 	// Delete
-	tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
+	// tx.Exec("DELETE FROM TEST WHERE COL1 = :1 AND col2 = :2", col1Val, col2Val)
 
 	// Update
-	// tx.Exec("UPDATE TEST SET COL1 = :1, COL2 = :2, COL3 = :3 WHERE COL1 = :4", "X", 88, 88.88, col1Val)
+	tx.Exec("UPDATE TEST SET COL1 = :1, COL2 = :2, COL3 = :3 WHERE COL1 = :4", "X", 88, 88.88, col1Val)
 
 	// Normal Qury
 	// rows, err := tx.Query("SELECT COL1, COL2, COL3, COL4 FROM TEST WHERE COL1 = :1 AND COL2 = :2", "X", 88)
@@ -131,4 +131,15 @@ func TestBasicUse(t *testing.T) {
 
 	db.Close()
 
+}
+
+func insertDataN(x int, db *sql.DB) error {
+	for i := 0; i < x; i++ {
+		_, err := db.Exec("insert into test ( col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
