@@ -54,6 +54,7 @@ type (
 	Connector struct {
 		// Logger is used to log connection ping errors
 		Logger *log.Logger
+		cfg    *DSN
 	}
 
 	// For seata transcation use

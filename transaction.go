@@ -2,6 +2,15 @@ package oci8
 
 // #include "oci8.go.h"
 import "C"
+import (
+	"log"
+	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/transaction-wg/seata-golang/pkg/base/meta"
+	"github.com/transaction-wg/seata-golang/pkg/client/config"
+)
 
 // Commit transaction commit
 func (tx *Tx) Commit() error {
@@ -87,48 +96,44 @@ func (tx *Tx) localRollback() error {
 func (tx *Tx) register() (int64, error) {
 	var branchID int64
 	var err error
-	// test
-	branchID = 1231
-	err = nil
-	// testend
 
-	// for retryCount := 0; retryCount < config.GetATConfig().LockRetryTimes; retryCount++ {
-	// 	branchID, err = dataSourceManager.BranchRegister(meta.BranchTypeAT, tx.mc.cfg.DBName, "", tx.mc.ctx.xid,
-	// 		nil, strings.Join(tx.mc.ctx.lockKeys, ";"))
-	// 	if err == nil {
-	// 		break
-	// 	}
-	// 	errLog.Print("branch register err: %v", err)
-	// 	var tex *meta.TransactionException
-	// 	if errors.As(err, &tex) {
-	// 		if tex.Code == meta.TransactionExceptionCodeGlobalTransactionNotExist {
-	// 			break
-	// 		}
-	// 	}
-	// 	time.Sleep(config.GetATConfig().LockRetryInterval)
-	// }
+	for retryCount := 0; retryCount < config.GetATConfig().LockRetryTimes; retryCount++ {
+		branchID, err = dataSourceManager.BranchRegister(meta.BranchTypeAT, tx.conn.cfg.Username, "", tx.conn.ctx.xid,
+			nil, strings.Join(tx.conn.ctx.lockKeys, ";"))
+		if err == nil {
+			break
+		}
+		log.Printf("branch register err: %v \n", err)
+		var tex *meta.TransactionException
+		if errors.As(err, &tex) {
+			if tex.Code == meta.TransactionExceptionCodeGlobalTransactionNotExist {
+				break
+			}
+		}
+		time.Sleep(config.GetATConfig().LockRetryInterval)
+	}
 	return branchID, err
 }
 
 func (tx *Tx) report(commitDone bool) error {
-	// retry := config.GetATConfig().LockRetryTimes
-	// for retry > 0 {
-	// 	var err error
-	// 	if commitDone {
-	// 		err = dataSourceManager.BranchReport(meta.BranchTypeAT, tx.mc.ctx.xid, tx.mc.ctx.branchID,
-	// 			meta.BranchStatusPhaseoneDone, nil)
-	// 	} else {
-	// 		err = dataSourceManager.BranchReport(meta.BranchTypeAT, tx.mc.ctx.xid, tx.mc.ctx.branchID,
-	// 			meta.BranchStatusPhaseoneFailed, nil)
-	// 	}
-	// 	if err != nil {
-	// 		errLog.Print("Failed to report [%d/%s] commit done [%t] Retry Countdown: %d",
-	// 			tx.mc.ctx.branchID, tx.mc.ctx.xid, commitDone, retry)
-	// 	}
-	// 	retry = retry - 1
-	// 	if retry == 0 {
-	// 		return errors.WithMessagef(err, "Failed to report branch status %t", commitDone)
-	// 	}
-	// }
+	retry := config.GetATConfig().LockRetryTimes
+	for retry > 0 {
+		var err error
+		if commitDone {
+			err = dataSourceManager.BranchReport(meta.BranchTypeAT, tx.conn.ctx.xid, tx.conn.ctx.branchID,
+				meta.BranchStatusPhaseoneDone, nil)
+		} else {
+			err = dataSourceManager.BranchReport(meta.BranchTypeAT, tx.conn.ctx.xid, tx.conn.ctx.branchID,
+				meta.BranchStatusPhaseoneFailed, nil)
+		}
+		if err != nil {
+			log.Printf("Failed to report [%d/%s] commit done [%t] Retry Countdown: %d \n",
+				tx.conn.ctx.branchID, tx.conn.ctx.xid, commitDone, retry)
+		}
+		retry = retry - 1
+		if retry == 0 {
+			return errors.WithMessagef(err, "Failed to report branch status %t", commitDone)
+		}
+	}
 	return nil
 }
