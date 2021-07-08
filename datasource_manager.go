@@ -38,7 +38,8 @@ func RegisterResource(dsn string) {
 	cfg, err := ParseDSN(dsn)
 	if err == nil {
 		c := &Connector{
-			cfg: cfg,
+			cfg:       cfg,
+			DSNstring: dsn,
 		}
 		dataSourceManager.ResourceCache[c.cfg.Username] = c
 		InitTableMetaCache(c.cfg.Username)

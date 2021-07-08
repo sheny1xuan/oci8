@@ -27,12 +27,15 @@ func (connector *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 		return nil, ctx.Err()
 	}
 
-	conn := &Conn{
-		logger: connector.Logger,
-	}
-	if conn.logger == nil {
-		conn.logger = log.New(ioutil.Discard, "", 0)
+	// conn := &Conn{
+	// 	logger: connector.Logger,
+	// }
+	conn, err := connector.Driver().Open(connector.DSNstring)
+
+	// conn := connector.Driver().Open(connector.cfg)
+	if conn.(*Conn).logger == nil {
+		conn.(*Conn).logger = log.New(ioutil.Discard, "", 0)
 	}
 
-	return conn, nil
+	return conn, err
 }

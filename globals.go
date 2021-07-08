@@ -53,8 +53,9 @@ type (
 	// Connector is the sql driver connector
 	Connector struct {
 		// Logger is used to log connection ping errors
-		Logger *log.Logger
-		cfg    *DSN
+		Logger    *log.Logger
+		cfg       *DSN
+		DSNstring string
 	}
 
 	// For seata transcation use
