@@ -70,6 +70,7 @@ func (tx *Tx) localCommit() error {
 
 // Rollback transaction rollback
 func (tx *Tx) Rollback() error {
+	err := tx.localRollback()
 	if tx.conn.ctx != nil {
 		branchID, err := tx.register()
 		if err != nil {
@@ -78,7 +79,7 @@ func (tx *Tx) Rollback() error {
 		tx.conn.ctx.branchID = branchID
 		tx.report(false)
 	}
-	return tx.localRollback()
+	return err
 }
 
 func (tx *Tx) localRollback() error {
