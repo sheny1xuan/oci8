@@ -1,4 +1,4 @@
-module oci8
+module github.com/sheny1xuan/oci8
 
 go 1.10
 

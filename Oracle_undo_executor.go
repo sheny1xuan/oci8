@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"oci8/schema"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"github.com/sheny1xuan/oci8/schema"
 	"github.com/transaction-wg/seata-golang/pkg/util/log"
 )
 

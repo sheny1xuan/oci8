@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"oci8/schema"
 	"strings"
 	"time"
+
+	"github.com/sheny1xuan/oci8/schema"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"

@@ -3,9 +3,10 @@ package oci8
 import (
 	"database/sql/driver"
 	"fmt"
-	"oci8/schema"
 	"strings"
 	"time"
+
+	"github.com/sheny1xuan/oci8/schema"
 
 	"github.com/google/go-cmp/cmp"
 	// "github.com/opentrx/mysql/schema"

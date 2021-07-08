@@ -3,9 +3,10 @@ package oci8
 import (
 	"bytes"
 	"fmt"
-	"oci8/schema"
 	"reflect"
 	"time"
+
+	"github.com/sheny1xuan/oci8/schema"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"

@@ -1,7 +1,7 @@
 package oci8
 
 import (
-	"oci8/schema"
+	"github.com/sheny1xuan/oci8/schema"
 )
 
 type sqlUndoLog struct {

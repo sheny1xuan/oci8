@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"oci8/schema"
+	"github.com/sheny1xuan/oci8/schema"
 
 	"github.com/go-playground/assert/v2"
 )
