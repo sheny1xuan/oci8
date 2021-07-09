@@ -37,14 +37,14 @@ func (state State) String() string {
 	}
 }
 
-type MysqlUndoLogManager struct {
+type OracleUndoLogManager struct {
 }
 
-func GetUndoLogManager() MysqlUndoLogManager {
-	return MysqlUndoLogManager{}
+func GetUndoLogManager() OracleUndoLogManager {
+	return OracleUndoLogManager{}
 }
 
-func (manager MysqlUndoLogManager) FlushUndoLogs(conn *Conn) error {
+func (manager OracleUndoLogManager) FlushUndoLogs(conn *Conn) error {
 	// defer func() {
 	// 	if err := recover(); err != nil {
 	// 		errLog.Print(err)
@@ -69,7 +69,7 @@ func (manager MysqlUndoLogManager) FlushUndoLogs(conn *Conn) error {
 	return manager.insertUndoLogWithNormal(conn, xid, branchID, buildContext(parser.GetName()), undoLogContent)
 }
 
-func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, resourceID string) error {
+func (manager OracleUndoLogManager) Undo(conn *Conn, xid string, branchID int64, resourceID string) error {
 	tx, err := conn.Begin()
 	if err != nil {
 		return err
@@ -152,7 +152,11 @@ func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, 
 		}
 		fmt.Printf("xid %s branch %d, undo_log deleted with %s", xid, branchID,
 			GlobalFinished.String())
-		tx.Commit()
+		err = tx.Commit()
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	} else {
 		manager.insertUndoLogWithGlobalFinished(conn, xid, branchID,
 			buildContext(GetUndoLogParser().GetName()), GetUndoLogParser().GetDefaultContent())
@@ -161,7 +165,7 @@ func (manager MysqlUndoLogManager) Undo(conn *Conn, xid string, branchID int64, 
 	return nil
 }
 
-func (manager MysqlUndoLogManager) selectUndolog(conn *Conn, xid string, branchID int64) ([]*branchUndoLog, error) {
+func (manager OracleUndoLogManager) selectUndolog(conn *Conn, xid string, branchID int64) ([]*branchUndoLog, error) {
 	args := []driver.Value{xid, branchID}
 	rows, err := conn.prepareQuery(SelectUndoLogSql, args)
 
@@ -209,7 +213,7 @@ func (manager MysqlUndoLogManager) selectUndolog(conn *Conn, xid string, branchI
 	return undoLogs, err
 }
 
-func (manager MysqlUndoLogManager) DeleteUndoLog(conn *Conn, xid string, branchID int64) error {
+func (manager OracleUndoLogManager) DeleteUndoLog(conn *Conn, xid string, branchID int64) error {
 	args := []driver.Value{xid, branchID}
 	result, err := conn.execAlways(DeleteUndoLogSql, args)
 	if err != nil {
@@ -220,7 +224,7 @@ func (manager MysqlUndoLogManager) DeleteUndoLog(conn *Conn, xid string, branchI
 	return nil
 }
 
-func (manager MysqlUndoLogManager) BatchDeleteUndoLog(conn *Conn, xids []string, branchIDs []int64) error {
+func (manager OracleUndoLogManager) BatchDeleteUndoLog(conn *Conn, xids []string, branchIDs []int64) error {
 	if xids == nil || branchIDs == nil || len(xids) == 0 || len(branchIDs) == 0 {
 		return nil
 	}
@@ -243,7 +247,7 @@ func (manager MysqlUndoLogManager) BatchDeleteUndoLog(conn *Conn, xids []string,
 	return nil
 }
 
-func (manager MysqlUndoLogManager) DeleteUndoLogByLogCreated(conn *Conn, logCreated time.Time, limitRows int) (sql.Result, error) {
+func (manager OracleUndoLogManager) DeleteUndoLogByLogCreated(conn *Conn, logCreated time.Time, limitRows int) (sql.Result, error) {
 	args := []driver.Value{logCreated, limitRows}
 	result, err := conn.execAlways(DeleteUndoLogByCreateSql, args)
 	return result, err
@@ -258,17 +262,17 @@ func toBatchDeleteUndoLogSql(xidSize int, branchIDSize int) string {
 	return sb.String()
 }
 
-func (manager MysqlUndoLogManager) insertUndoLogWithNormal(conn *Conn, xid string, branchID int64,
+func (manager OracleUndoLogManager) insertUndoLogWithNormal(conn *Conn, xid string, branchID int64,
 	rollbackCtx string, undoLogContent []byte) error {
 	return manager.insertUndoLog(conn, xid, branchID, rollbackCtx, undoLogContent, Normal)
 }
 
-func (manager MysqlUndoLogManager) insertUndoLogWithGlobalFinished(conn *Conn, xid string, branchID int64,
+func (manager OracleUndoLogManager) insertUndoLogWithGlobalFinished(conn *Conn, xid string, branchID int64,
 	rollbackCtx string, undoLogContent []byte) error {
 	return manager.insertUndoLog(conn, xid, branchID, rollbackCtx, undoLogContent, GlobalFinished)
 }
 
-func (manager MysqlUndoLogManager) insertUndoLog(conn *Conn, xid string, branchID int64,
+func (manager OracleUndoLogManager) insertUndoLog(conn *Conn, xid string, branchID int64,
 	rollbackCtx string, undoLogContent []byte, state State) error {
 	args := []driver.Value{branchID, xid, rollbackCtx, undoLogContent, int64(state)}
 	_, err := conn.execAlways(InsertUndoLogSql, args)

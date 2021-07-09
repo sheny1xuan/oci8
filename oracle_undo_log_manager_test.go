@@ -42,33 +42,34 @@ func TestDeleteUndoManager(t *testing.T) {
 }
 
 func getInsertUndolog(t *testing.T) {
-	db, err := sql.Open("oci8", "C##STUDENT/123456@127.0.0.1:1521/ORCL")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer db.Close()
 
 	InitTableMetaCache("C##STUDENT")
 
-	ctx := context.WithValue(
-		context.Background(),
-		XID,
-		testXID)
+	tx := get_tx(testDSN)
 
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelDefault,
-		ReadOnly:  false,
-	})
+	args := []driver.Value{col1Val, col2Val, col3Val, col4Val}
+
+	stmt, err := tx.conn.Prepare("insert into test (col1, col2, col3, col4, col5 ) values ( :1, :2, :3, :4, sysdate)")
 
 	if err != nil {
-		t.Errorf("begin Tx error")
+		t.Errorf("Insert error")
 	}
 
-	// Insert
-	tx.Exec("insert into test (col1, col2, col3, col4 ) values ( :1, :2, :3, :4)", col1Val, col2Val, col3Val, col4Val)
+	s := stmt.(*Stmt)
 
-	tx.Commit()
+	_, err = s.Exec(args)
+
+	if err != nil {
+		t.Errorf("Insert error")
+	}
+
+	tx.conn.ctx.branchID = testBranchID
+
+	if len(tx.conn.ctx.sqlUndoItemsBuffer) > 0 {
+		err = GetUndoLogManager().FlushUndoLogs(tx.conn)
+	}
+
+	tx.localCommit()
 }
 
 func getDeleteUndolog(t *testing.T) {

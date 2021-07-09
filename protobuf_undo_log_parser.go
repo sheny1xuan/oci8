@@ -176,15 +176,15 @@ func convertPbField(pbField *PbField) *schema.Field {
 		field.Value = pbField.Value[1:]
 	case fieldTypeTime:
 		// undo
-		// loc, _ := time.LoadLocation("Local")
-		// t, err := parseDateTime(
-		// 	pbField.Value[1:],
-		// 	loc,
-		// )
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// field.Value = t
+		loc, _ := time.LoadLocation("Local")
+		t, err := parseDateTime(
+			pbField.Value[1:],
+			loc,
+		)
+		if err != nil {
+			panic(err)
+		}
+		field.Value = t
 		break
 	default:
 		fmt.Printf("unsupport types:%v", valueType)

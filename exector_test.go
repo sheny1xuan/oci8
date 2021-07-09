@@ -3,6 +3,7 @@ package oci8
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -27,6 +28,28 @@ func get_conn(dbname string) *Conn {
 	oc := conn.(*Conn)
 
 	return oc
+}
+
+func get_tx(dbname string) *Tx {
+
+	conn := get_conn(dbname)
+
+	ctx := context.WithValue(
+		context.Background(),
+		XID,
+		testXID)
+
+	tx, err := conn.BeginTx(ctx, driver.TxOptions{
+		ReadOnly: false,
+	})
+
+	if err != nil {
+		panic("Get Tx error")
+	}
+
+	ret, _ := tx.(*Tx)
+
+	return ret
 }
 
 func TestConn(t *testing.T) {
